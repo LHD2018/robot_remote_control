@@ -44,7 +44,7 @@ signals:
     // 将图像发送的主线程，更新ui
     void SendImg(QImage img);
     // 发送log
-    void CamIMGLog(QString log);
+    void TransIMGLog(QString log);
 
 };
 

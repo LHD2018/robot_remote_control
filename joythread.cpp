@@ -9,13 +9,13 @@ JoyThread::JoyThread(QObject *parent) :
 //JoyThread的线程主体
 void JoyThread::run()
 {
-    memset(&c_params, 0, sizeof(ControlParams));
+    memset(&joy_c, 0, sizeof(JoyControl));
     int joy_id = openJoy();
 
     if(joy_id == 0){
         emit JoyLog(QString("can not find controller!"));
         return;
-    }else if(joy_id > 0 && joy_id < 20){
+    }else if(joy_id < 20){
         emit JoyLog(QString("joystick connected success!"));
     }else{
         emit JoyLog(QString("G29 connected success!"));
@@ -30,8 +30,8 @@ void JoyThread::run()
         }else{
             G29Process();
         }
-        c_params.type_flag = true;
-        joy_var.setValue(c_params);
+
+        joy_var.setValue(joy_c);
         emit JoySignal_row(joy_var);
 
     }
@@ -47,46 +47,60 @@ void JoyThread::joystickProcess(){
     joykey_info.v_ax = 32511 - state_row.dwRpos;
 
     if(abs(joykey_info.x_ax) > 500 || abs(joykey_info.y_ax) > 500){
-        c_params.x_speed = joykey_info.x_ax / 32767.0;
-        c_params.y_speed = joykey_info.y_ax / 32511.0;
+        joy_c.x_speed = V_MAX_SPEED * (joykey_info.x_ax / 32767.0);
+        joy_c.y_speed = V_MAX_SPEED * (joykey_info.y_ax / 32511.0);
 
-        if(c_params.y_speed > 0){
-            c_params.camera_tag = 1;
+        if(joy_c.y_speed > 0){
+            joy_c.camera_tag = 1;
         } else{
-            c_params.camera_tag = -1;
+            joy_c.camera_tag = -1;
         }
     }else{
-        c_params.x_speed = 0.0;
-        c_params.y_speed = 0.0;
-        c_params.camera_tag = 0;
+        joy_c.x_speed = 0.0;
+        joy_c.y_speed = 0.0;
+        joy_c.camera_tag = 0;
     }
 
     if(abs(joykey_info.u_ax) > 500){
-        c_params.w_speed = joykey_info.u_ax / 32767.0;
+        joy_c.w_speed = joykey_info.u_ax / 32767.0;
     }else{
-        c_params.w_speed = 0.0;
+        joy_c.w_speed = 0.0;
     }
 
     //qDebug() << "button" << state_row.dwButtons<< endl;
 
-    if(state_row.dwButtons == 16) {
-        // LB按钮
-        c_params.camera_tag = 1;
-    }else if(state_row.dwButtons == 32){
-        // RB按钮
-        c_params.camera_tag = -1;
-    }else if(state_row.dwButtons == 256){
-        // BACK按钮
-        c_params.camera_tag = 0;
-    }else if(state_row.dwButtons == 1){
-        c_params.robot_model = 0;
-    }else if(state_row.dwButtons == 2){
-        c_params.robot_model = 1;
-    }else if(state_row.dwButtons == 4){
-        c_params.robot_model = 2;
-    }else if(state_row.dwButtons == 8){
-        c_params.robot_model = 3;
+    switch (state_row.dwButtons) {
+
+    case 1:
+        qDebug() << "button_A";
+        joy_c.robot_model = 0;
+        break;
+    case 4:
+        qDebug() << "button_X";
+        joy_c.robot_model = 3;
+        break;
+    case 16:
+        qDebug() << "button_LB";
+        joy_c.camera_tag = 1;
+        break;
+    case 32:
+        qDebug() << "button_RB";
+        joy_c.camera_tag = -1;
+        break;
+    case 256:
+        qDebug() << "button_Back";
+        joy_c.camera_tag = 0;
+        break;
+    default:
+        break;
     }
+
+    if(joy_c.robot_model == 0){
+        joy_c.w_speed *= W_MAX_SPEED;
+    }else{
+        joy_c.y_speed = 0;
+    }
+
 }
 
 void JoyThread::G29Process(){
@@ -104,178 +118,109 @@ void JoyThread::G29Process(){
 
     qDebug() << "button" << state_row.dwButtons<< endl;
 
-}
+    memset(&joykey_info, 0, sizeof(joykey_info));
 
-void JoyThread::copy_value_to_joykey_info()
-{
- //*******************************************************//
-    /*
-           qDebug()<<"state_row.dwXpos:"<<state_row.dwXpos;
-           //方向盘是X轴
-           qDebug()<<"state_row.dwYpos:"<<state_row.dwYpos;
-           //左一 离合
-           qDebug()<<"state_row.dwRpos:"<<state_row.dwRpos;
-           //左二 刹车
-           qDebug()<<"state_row.dwUpos:"<<state_row.dwUpos;
-           //空白 无数据
-           qDebug()<<"state_row.dwZpos:"<<state_row.dwZpos;
-           //左三 油门
-    */
-/***************************************************
-                按键  轴数据  控制
- **************************************************/
-/*
-    //方向盘控制位置
-        if(state_row.dwXpos>32832)
-             joykey_info.X_Axis=(state_row.dwXpos*0.03051);
-        else if(state_row.dwXpos<32700)
-             joykey_info.X_Axis=(state_row.dwXpos*0.03051+1);
-        else
-             joykey_info.X_Axis=1000;
-       //qDebug()<<joykey_info.X_Axis;
+    joykey_info.x_ax = state_row.dwZpos;
+    joykey_info.y_ax = state_row.dwRpos;
+    joykey_info.u_ax = 32767 - state_row.dwXpos;
+    joykey_info.v_ax = state_row.dwYpos;
 
-    //三个脚刹控制速度
-        //正向速度
-        if(state_row.dwRpos>state_row.dwZpos)
-           joykey_info.Y_Axis=0.4218*(state_row.dwRpos-state_row.dwZpos);
-        else
-            joykey_info.Y_Axis=0;
+    if(joykey_info.v_ax > 30000){
+        if(state_row.dwButtons == 4096){
+            joy_c.robot_gear = 1;
+        }else if(state_row.dwButtons == 8192){
+            joy_c.robot_gear = 2;
+        }else if(state_row.dwButtons == 16384){
+            joy_c.robot_gear = 3;
+        }else if(state_row.dwButtons == 32768){
+            joy_c.robot_gear = 4;
+        }else if(state_row.dwButtons == 65536){
+            joy_c.robot_gear = 5;
+        }else if(state_row.dwButtons == 131072){
+            joy_c.robot_gear = 6;
+        }else if(state_row.dwButtons == 262144){
+            joy_c.robot_gear = -1;
+        }else if(state_row.dwButtons == 0){
+            joy_c.robot_gear = 0;
+        }
 
-        //反向速度
-        if(state_row.dwRpos>state_row.dwYpos)
-           joykey_info.Z_Axis=65535-0.4218*(state_row.dwRpos-state_row.dwYpos);
-        else
-            joykey_info.Z_Axis=65535;
-        qDebug()<<"YYYY"<<joykey_info.Y_Axis;
-        qDebug()<<"ZZZZ"<<joykey_info.Z_Axis;
+    }
 
-     //档位选择
-            if(state_row.dwButtons & 0x01 << 12) {
-                joykey_info.U_Axis=1;
-                //qDebug()<<"挡位1";
-            }
-            else if(state_row.dwButtons & 0x01 << 13) {
-                joykey_info.U_Axis=2;
-                //qDebug()<<"挡位2";
-            }
-            else if(state_row.dwButtons & 0x01 << 14) {
-                joykey_info.U_Axis=3;
-                //qDebug()<<"挡位3";
-            }
-            else if(state_row.dwButtons & 0x01 << 15) {
-                joykey_info.U_Axis=4;
-                //qDebug()<<"挡位4";
-            }
-            else if(state_row.dwButtons & 0x01 << 16) {
-                joykey_info.U_Axis=5;
-                //qDebug()<<"挡位5";
-            }
-            else if(state_row.dwButtons & 0x01 << 17) {
-                joykey_info.U_Axis=6;
-                //qDebug()<<"挡位6";
-            }
-            else if(state_row.dwButtons & 0x01 << 18) {
-                joykey_info.U_Axis=7;
-                //qDebug()<<"倒挡";
-            }
-            else{joykey_info.U_Axis=0;}
+    if(abs(joykey_info.u_ax) > 1000){
+        joy_c.w_speed = joykey_info.u_ax / 32767.0;
+    }else{
+        joy_c.w_speed = 0.0;
+    }
 
-*/
+    switch (joy_c.robot_model) {
 
-//************************************************************//
+    case 0:
+        if(joy_c.robot_gear >=0){
+            joy_c.x_speed = 0.1 * joy_c.robot_gear * (joykey_info.x_ax / 65535.0);
+            joy_c.camera_tag = 1;
+        }else{
+            joy_c.x_speed = -0.3 * (joykey_info.x_ax / 65535.0);
+            joy_c.camera_tag = -1;
+        }
+        joy_c.y_speed = 0.0;
+        joy_c.w_speed *= W_MAX_SPEED;
+        break;
+    case 1:
+        joy_c.y_speed = 0.3 *(joykey_info.x_ax / 65535.0);
+        joy_c.x_speed = 0.0;
+        joy_c.w_speed = 0.0;
+        break;
+    case 2:
 
-//    //xbox 手柄写
+        joy_c.y_speed = -0.3 *(joykey_info.x_ax / 65535.0);
+        joy_c.x_speed = 0.0;
+        joy_c.w_speed = 0.0;
+        break;
+    case 3:
+        if(joy_c.robot_gear >=0){
+            joy_c.x_speed = 0.1 * joy_c.robot_gear * (joykey_info.x_ax / 65535.0);
+            joy_c.camera_tag = 1;
+        }else{
+            joy_c.x_speed = -0.3 * (joykey_info.x_ax / 65535.0);
+            joy_c.camera_tag = -1;
+        }
+        joy_c.y_speed = 0.0;
+        break;
+    default:
+        break;
 
-//        joykey_info.X_Axis = state_row.dwXpos - 32767;
-//        joykey_info.Y_Axis = 32511 - state_row.dwYpos;
-
-//        joykey_info.U_Axis = state_row.dwZpos - 32767;
-//        joykey_info.V_Axis = 32511 - state_row.dwRpos;
-
-//        qDebug() << "button" << state_row.dwButtons<< endl;
-//        if(state_row.dwButtons == 2) {
-
-//            joykey_info.A_button=1;
-//        }
-//        else{joykey_info.A_button=0;}
-
-//        if(state_row.dwButtons == 4) {
-//         joykey_info.B_button=1;
-//        }else{  joykey_info.B_button=0;}
-
-//        if(state_row.dwButtons == 1) {
-//            joykey_info.X_button=1;
-//        }else{joykey_info.X_button=0;}
-
-//        if(state_row.dwButtons == 8) {
-//            joykey_info.Y_button=1;
-//        }else{
-//            joykey_info.Y_button=0;
-//        }
-
-//        if(state_row.dwButtons == 512) {
-//               joykey_info.START_button=1;
-//        }else{ joykey_info.START_button=0;}
-
-//        if(state_row.dwButtons == 256) {
-//            joykey_info.BACK_button=1;
-//        }else{
-//             joykey_info.BACK_button=0;
-//        }
+    }
 
 
+    switch (state_row.dwButtons) {
 
-//********************未分配*********
-
-
-
-
-//            if(state_row.dwButtons & 0x01 << 6) {
-//                joykey_info.BACK_button=1;
-//            }else{
-//                 joykey_info.BACK_button=0;
-//            }
-
-
-
-//            if(state_row.dwPOV == 0) {
-//               joykey_info.UP_button=1;
-
-//            } else if(state_row.dwPOV == 9000) {
-
-//                 joykey_info.RIGHT_button=1;
-
-//            } else if(state_row.dwPOV == 18000) {
-//               joykey_info.DOWN_button=1;
-
-//            } else if(state_row.dwPOV == 27000) {
-
-//                 joykey_info.LEFT_button=1;
-
-//            } else if(state_row.dwPOV == 4500) {
-
-//                joykey_info.UP_button=1;
-//                joykey_info.RIGHT_button=1;
-
-//            } else if(state_row.dwPOV == 31500) {
-
-//                joykey_info.UP_button=1;
-//                joykey_info.LEFT_button=1;
-
-//            } else if(state_row.dwPOV == 13500) {
-//             joykey_info.RIGHT_button=1;
-//                joykey_info.DOWN_button=1;
-
-//            } else if(state_row.dwPOV == 22500) {
-//                joykey_info.LEFT_button=1;
-//                joykey_info.DOWN_button=1;
-//            }else{
-//                joykey_info.LEFT_button=0;
-//                joykey_info.DOWN_button=0;
-//                joykey_info.UP_button=0;
-//                joykey_info.RIGHT_button=0;
-//            }
-
+    case 1:
+        // X按钮
+        joy_c.robot_model = 3;
+        break;
+    case 2:
+        // 正方形按钮
+        joy_c.robot_model = 1;
+        break;
+    case 4:
+        // 圆形按钮
+        joy_c.robot_model = 0;
+        break;
+    case 8:
+        // 三角形按钮
+        joy_c.robot_model = 2;
+        break;
+    case 16:
+        // 右拨片
+        joy_c.camera_tag = -1;
+        break;
+    case 32:
+        joy_c.camera_tag = 1;
+        break;
+    default:
+        break;
+    }
 
 
 }
+

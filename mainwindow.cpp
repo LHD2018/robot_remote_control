@@ -15,14 +15,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     qRegisterMetaType<QVariant>("QVariant");//注册一种信号的参数类型
 
-    setButton(ui->on_btn, ":/res/start.png", "start");
-    setButton(ui->off_btn, ":/res/stop.png", "stop");
+    setButton(ui->on_btn, ":/res/start.png", QStringLiteral("开启机器人"));
+    setButton(ui->off_btn, ":/res/stop.png", QStringLiteral("关闭机器人"));
+    setButton(ui->sync_btn, ":/res/sync.png", QStringLiteral("同步信息"));
     ui->battery_bar->setValue(100);
 
     // 检测网络状况
     QHostInfo::lookupHost("www.baidu.com", this, SLOT(checkNet(QHostInfo)));
 
     camimg_thread = new CamImgThread();
+    lidarimg_thread = new LidarImgThread();
     joy_thread = new JoyThread();
 
     sock_worker = new SocketWorker;
@@ -42,16 +44,26 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 接收相机视频流处理
     connect(camimg_thread->cam_img, SIGNAL(SendImg(QImage)), this, SLOT(displayCamImg(QImage)));
+
+    // 接收雷达视频流
+    connect(lidarimg_thread->lidar_img, SIGNAL(SendImg(QImage)), this, SLOT(displayLidarImg(QImage)));
+
     // 手柄log
     connect(joy_thread, SIGNAL(JoyLog(QString)), this, SLOT(displayLog(QString)));
     // 相机流log
-    connect(camimg_thread->cam_img, SIGNAL(CamIMGLog(QString)), this, SLOT(displayLog(QString)));
+    connect(camimg_thread->cam_img, &ImgTrancefer::TransIMGLog, [=](QString log){
+        ui->log_text->append("[camera]:" + log);
+    });
+    // 雷达流log
+    connect(lidarimg_thread->lidar_img, &ImgTrancefer::TransIMGLog, [=](QString log){
+        ui->log_text->append("[lidar]:" + log);
+    });
 
 
     // mqtt信号
     connect(mqttpubsub, &MQTTPubSub::connected, [=](){
         qDebug() << "mqtt connected success";
-        mqttpubsub->mqttSubcribe(SUB_TOPIC);
+        mqttpubsub->mqttSubcribe(INFO_TOPIC);
     });
 
     connect(mqttpubsub, &MQTTPubSub::subscribed, [=](const QString &topic){
@@ -85,12 +97,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->on_btn, &QPushButton::clicked, [=](){
         //qDebug() << "on";
-        mqttpubsub->mqttPublish(PUB_TOPIC, "1");
+        mqttpubsub->mqttPublish(ONOFF_TOPIC, "1");
     });
 
     connect(ui->off_btn, &QPushButton::clicked, [=](){
         //qDebug() << "off";
-        mqttpubsub->mqttPublish(PUB_TOPIC, "0");
+        mqttpubsub->mqttPublish(ONOFF_TOPIC, "0");
+    });
+
+    connect(ui->sync_btn, &QPushButton::clicked, [=](){
+
+        mqttpubsub->mqttPublish(SYNC_TOPIC, "1");
     });
 
 }
@@ -169,12 +186,20 @@ void MainWindow::displayLog(QString log){
 }
 
 void MainWindow::displayCamImg(QImage img){
+
     ui->camera_img->setPixmap(QPixmap::fromImage(img));
 
 }
 
-void MainWindow::on_camImg_btn_clicked()
-{
+void MainWindow::displayLidarImg(QImage img){
+
+    ui->lidar_img->setPixmap(QPixmap::fromImage(img).scaled(ui->lidar_img->width(),
+                                                            ui->lidar_img->height(),
+                                                            Qt::KeepAspectRatio));
+
+}
+
+void MainWindow::on_camImg_btn_clicked(){
     if(camimg_thread->isRunning()){
         return;
     }
@@ -182,10 +207,9 @@ void MainWindow::on_camImg_btn_clicked()
     QString camimg_url = ui->camImg_text->text();
     if(camimg_url == ""){
         displayLog("camImg_url is empty");
-        qDebug() << "camImg_url is empty";
         return;
     }
-    qDebug() << camimg_url;
+
     camimg_thread->cam_img->setUrl(camimg_url);
 
     camimg_thread->start();
@@ -195,6 +219,28 @@ void MainWindow::on_camImg_btn_clicked()
         ui->log_text->append("recieve camera stream faild!");
     }
 
+}
+
+void MainWindow::on_lidarImg_btn_clicked(){
+    if(lidarimg_thread->isRunning()){
+        return;
+    }
+
+    QString lidarimg_url = ui->lidarImg_text->text();
+    if(lidarimg_url == ""){
+        displayLog("lidarImg_url is empty");
+        return;
+    }
+
+    lidarimg_thread->lidar_img->setUrl(lidarimg_url);
+
+    lidarimg_thread->start();
+
+    if(lidarimg_thread->isRunning()){
+        ui->log_text->append("start recieving lidar stream...");
+    }else{
+        ui->log_text->append("recieve lidar stream faild!");
+    }
 }
 
 void MainWindow::on_gps_btn_clicked()
@@ -233,8 +279,33 @@ void MainWindow::on_disconnect_btn_clicked(){
 void MainWindow::showRobotInfo(QVariant s_var){
     r_info = s_var.value<ShowInfo>();
 
-    ui->gear_label->setText("gear " + QString::number(r_info.robot_gear));
-    ui->model_label->setText(("model " + QString::number(r_info.robot_model)));
+    if(r_info.robot_gear > 0)
+        ui->gear_label->setText(QStringLiteral("挡位") + QString::number(r_info.robot_gear));
+    else if(r_info.robot_gear == 0)
+        ui->gear_label->setText(QStringLiteral("空挡"));
+    else
+        ui->gear_label->setText(QStringLiteral("倒挡"));
+
+
+    switch(r_info.robot_model){
+    case 0:
+        ui->model_label->setText(QStringLiteral("正常模式"));
+        break;
+
+    case 1:
+        ui->model_label->setText(QStringLiteral("左侧行模式"));
+        break;
+    case 2:
+        ui->model_label->setText(QStringLiteral("右侧行模式"));
+        break;
+    case 3:
+        ui->model_label->setText(QStringLiteral("单独轮转模式"));
+        break;
+    default:
+        break;
+
+    }
+
     QString cmd = QString("doLocal(%1,%2)").arg(QString::number(r_info.gps_data.lon, 'f', 6)).arg(QString::number(r_info.gps_data.lat, 'f', 6));
     // qDebug() << cmd;
     ui->map_frame->page()->runJavaScript(cmd);

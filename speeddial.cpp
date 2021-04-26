@@ -29,7 +29,7 @@ SpeedDial::SpeedDial(QWidget *parent) : QWidget(parent)
 
 void SpeedDial::UpdateAngle(double speed){
 
-    m_value = speed * 50.0;
+    m_value = speed * 100.0;
     QWidget::update();
 
 
@@ -70,7 +70,7 @@ void SpeedDial::drawScaleNum(QPainter *painter) //绘制刻度数字
         sina = sin(startRad - i * deltaRad);
         cosa = cos(startRad - i * deltaRad);
 
-        tmpVal = (1.0 * i *((m_maxValue - m_minValue) / m_scaleMajor) + m_minValue) /50.0;
+        tmpVal = (1.0 * i *((m_maxValue - m_minValue) / m_scaleMajor) + m_minValue) / 100;
 
         str = QString( "%1" ).arg(tmpVal);  //%1作为占位符   arg()函数比起 sprintf()来是类型安全的
         w = fm.size(Qt::TextSingleLine,str).width();

@@ -20,12 +20,12 @@ void ImgTrancefer::transImg(){
 
     ret = avformat_open_input(&iCtx, rtmp_url.data(), NULL, NULL);
     if(ret != 0){
-        emit CamIMGLog(QString("open input faild!"));
+        emit TransIMGLog(QString("open input faild!"));
         qDebug() << "open input faild!";
         return;
     }
     if(avformat_find_stream_info(iCtx, NULL) < 0){
-        emit CamIMGLog(QString("find stream faild!"));
+        emit TransIMGLog(QString("find stream faild!"));
         qDebug() << "find stream faild!";
         return;
     }
@@ -42,7 +42,7 @@ void ImgTrancefer::transImg(){
     //查找视频解码器
     codec = avcodec_find_decoder(videoCtx->codec_id);
     if (!codec){
-        emit CamIMGLog(QString("find decoder faild!"));
+        emit TransIMGLog(QString("find decoder faild!"));
         qDebug() << "find decoder faild!";
         return;
     }
@@ -54,7 +54,7 @@ void ImgTrancefer::transImg(){
     //打开视频解码器
     ret = avcodec_open2(videoCtx, codec, NULL);
     if (ret != 0){
-        emit CamIMGLog(QString("open codec faild!"));
+        emit TransIMGLog(QString("open codec faild!"));
         qDebug() << "open codec faild!";
         return;
     }
@@ -72,7 +72,7 @@ void ImgTrancefer::transImg(){
 
         ret = av_read_frame(iCtx, pkt);
         if(ret != 0){
-            emit CamIMGLog(QString("read frame faild!"));
+            emit TransIMGLog(QString("read frame faild!"));
             qDebug() << "read frame faild!";
             continue;
         }
@@ -87,7 +87,7 @@ void ImgTrancefer::transImg(){
 
         ret = avcodec_receive_frame(videoCtx, yuv);
         if(ret != 0){
-            emit CamIMGLog(QString("get frame faild!"));
+            emit TransIMGLog(QString("get frame faild!"));
             qDebug() << "get frame faild!";
             continue;
         }

@@ -24,6 +24,7 @@ void SocketWorker::connectSocket(){
     // 初始化控制参数与状态参数
     memset(&c_params, 0, sizeof(struct ControlParams));
     memset(&s_params, 0, sizeof(struct StatusParams));
+    memset(&joy_c, 0, sizeof(JoyControl));
     memset(&s_info, 0, sizeof(struct ShowInfo));
 
     // socket接收数据处理
@@ -51,15 +52,23 @@ void SocketWorker::connectSocket(){
 }
 
 void SocketWorker::sendData(QVariant joy_var){
-    c_params = joy_var.value<ControlParams>();
+    joy_c = joy_var.value<JoyControl>();
 
-    s_info.robot_gear = c_params.robot_gear;
-    s_info.robot_model = c_params.robot_model;
-    s_info.v_speed = sqrt(c_params.x_speed*c_params.x_speed + c_params.y_speed * c_params.y_speed);
+    c_params.type_flag = true;
+    c_params.camera_tag = joy_c.camera_tag;
+    c_params.robot_model = joy_c.robot_model;
+    c_params.x_speed = joy_c.x_speed;
+    c_params.y_speed = joy_c.y_speed;
+    c_params.w_speed = joy_c.w_speed;
 
     if(tcpSendTo(tcp_socket, (char *)&c_params, sizeof(ControlParams)) == false){
         qDebug() << "send data failed!" << endl;
     }
+
+    s_info.robot_gear = joy_c.robot_gear;
+    s_info.robot_model = joy_c.robot_model;
+
+    s_info.v_speed = sqrt(c_params.x_speed*c_params.x_speed + c_params.y_speed * c_params.y_speed);
 
 }
 

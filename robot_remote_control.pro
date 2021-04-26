@@ -20,6 +20,7 @@ SOURCES += \
     imgtrancefer.cpp \
     joystick.cpp \
     joythread.cpp \
+    lidarimgthread.cpp \
     main.cpp \
     mainwindow.cpp \
     mqttpubsub.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     imgtrancefer.h \
     joystick.h \
     joythread.h \
+    lidarimgthread.h \
     mainwindow.h \
     mqttpubsub.h \
     mysocket.h \

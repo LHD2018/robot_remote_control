@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "camimgthread.h"
+#include "lidarimgthread.h"
 #include "socketworker.h"
 #include "mqttpubsub.h"
 #include <QMainWindow>
@@ -34,8 +35,9 @@ private:
     QString mqtt_username;
     QString mqtt_password;
 
-    const QString PUB_TOPIC = "ONOFF_ROBOT";
-    const QString SUB_TOPIC = "ROBOT_INFO";
+    const QString ONOFF_TOPIC = "ONOFF_ROBOT";
+    const QString INFO_TOPIC = "ROBOT_INFO";
+    const QString SYNC_TOPIC = "SYNC_ROBOT";
     // 需要展示的信息
     struct ShowInfo r_info;
     // mqtt
@@ -43,10 +45,12 @@ private:
 
     int m_state = -1;
 
-    CamImgThread *camimg_thread;    // 相机视频流线程
-    JoyThread *joy_thread;          // 控制器线程
+    CamImgThread *camimg_thread;        // 相机视频流线程
+    LidarImgThread *lidarimg_thread;    // 雷达视频流线程
 
-    QThread sock_thread;            // 手柄读取线程
+    JoyThread *joy_thread;              // 控制器线程
+
+    QThread sock_thread;                // 手柄读取线程
     SocketWorker *sock_worker;
 
     QSettings *config_ini;           // 参数读写
@@ -62,6 +66,8 @@ private:
 private slots:
     // 显示相机视频流图像
     void displayCamImg(QImage img);
+    // 显示雷达视频流图像
+    void displayLidarImg(QImage img);
     // 显示log
     void displayLog(QString log);
 
@@ -73,6 +79,7 @@ private slots:
     void on_joy_btn_clicked();
     void on_connect_btn_clicked();
     void on_disconnect_btn_clicked();
+    void on_lidarImg_btn_clicked();
 
     // 展示信息
     void showRobotInfo(QVariant s_var);
