@@ -18,7 +18,7 @@ SpeedDial::SpeedDial(QWidget *parent) : QWidget(parent)
     m_value = 0;
 
     m_updateTimer = new QTimer(this);
-    m_updateTimer->setInterval(100);//间隔，微妙微单位，大家可以改一下这个值看看转动速度。
+    m_updateTimer->setInterval(10000);//间隔，微妙微单位，大家可以改一下这个值看看转动速度。
     connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(UpdateAngle()));
     m_updateTimer->start();//启动定时器
 
@@ -125,7 +125,7 @@ void SpeedDial::drawTitle(QPainter *painter)
 
 void SpeedDial::drawNumericValue(QPainter *painter)
 {
-    QString str = QString("%1 %2").arg(m_value, 0, 'f', m_precision).arg(m_units);
+    QString str = QString("%1 %2").arg(m_value / 100, 0, 'f', m_precision).arg(m_units);
     QFontMetricsF fm(font());
     double w = fm.size(Qt::TextSingleLine,str).width();
     painter->setPen(m_foreground);

@@ -120,31 +120,10 @@ void JoyThread::G29Process(){
 
     memset(&joykey_info, 0, sizeof(joykey_info));
 
-    joykey_info.x_ax = state_row.dwZpos;
-    joykey_info.y_ax = state_row.dwRpos;
+    joykey_info.x_ax = 65535 - state_row.dwZpos;
+    joykey_info.y_ax = 65535 - state_row.dwRpos;
     joykey_info.u_ax = 32767 - state_row.dwXpos;
-    joykey_info.v_ax = state_row.dwYpos;
-
-    if(joykey_info.v_ax > 30000){
-        if(state_row.dwButtons == 4096){
-            joy_c.robot_gear = 1;
-        }else if(state_row.dwButtons == 8192){
-            joy_c.robot_gear = 2;
-        }else if(state_row.dwButtons == 16384){
-            joy_c.robot_gear = 3;
-        }else if(state_row.dwButtons == 32768){
-            joy_c.robot_gear = 4;
-        }else if(state_row.dwButtons == 65536){
-            joy_c.robot_gear = 5;
-        }else if(state_row.dwButtons == 131072){
-            joy_c.robot_gear = 6;
-        }else if(state_row.dwButtons == 262144){
-            joy_c.robot_gear = -1;
-        }else if(state_row.dwButtons == 0){
-            joy_c.robot_gear = 0;
-        }
-
-    }
+    joykey_info.v_ax = 65535 - state_row.dwYpos;
 
     if(abs(joykey_info.u_ax) > 1000){
         joy_c.w_speed = joykey_info.u_ax / 32767.0;
@@ -152,15 +131,18 @@ void JoyThread::G29Process(){
         joy_c.w_speed = 0.0;
     }
 
+    if(abs(joykey_info.x_ax) < 1000){
+        joykey_info.x_ax = 0;
+    }
+
     switch (joy_c.robot_model) {
 
     case 0:
         if(joy_c.robot_gear >=0){
             joy_c.x_speed = 0.1 * joy_c.robot_gear * (joykey_info.x_ax / 65535.0);
-            joy_c.camera_tag = 1;
+
         }else{
             joy_c.x_speed = -0.3 * (joykey_info.x_ax / 65535.0);
-            joy_c.camera_tag = -1;
         }
         joy_c.y_speed = 0.0;
         joy_c.w_speed *= W_MAX_SPEED;
@@ -177,14 +159,15 @@ void JoyThread::G29Process(){
         joy_c.w_speed = 0.0;
         break;
     case 3:
+        // 轮独转
         if(joy_c.robot_gear >=0){
             joy_c.x_speed = 0.1 * joy_c.robot_gear * (joykey_info.x_ax / 65535.0);
-            joy_c.camera_tag = 1;
+
         }else{
             joy_c.x_speed = -0.3 * (joykey_info.x_ax / 65535.0);
-            joy_c.camera_tag = -1;
         }
         joy_c.y_speed = 0.0;
+        joy_c.w_speed *= M_PI_2;
         break;
     default:
         break;
@@ -210,17 +193,40 @@ void JoyThread::G29Process(){
         // 三角形按钮
         joy_c.robot_model = 2;
         break;
-    case 16:
-        // 右拨片
-        joy_c.camera_tag = -1;
+
+    case 4096:
+        joy_c.robot_gear = 1;
         break;
-    case 32:
-        joy_c.camera_tag = 1;
+    case 8192:
+        joy_c.robot_gear = 2;
+        break;
+    case 16384:
+        joy_c.robot_gear = 3;
+        break;
+    case 32768:
+        joy_c.robot_gear = 4;
+        break;
+    case 65536:
+        joy_c.robot_gear = 5;
+        break;
+    case 131072:
+        joy_c.robot_gear = 6;
+        break;
+    case 262144:
+        joy_c.robot_gear = -1;
+        break;
+    case 0:
+        joy_c.robot_gear = 0;
         break;
     default:
         break;
     }
 
+    if(joykey_info.y_ax > 20000){
+        joy_c.x_speed = 0.0;
+        joy_c.y_speed = 0.0;
+        joy_c.w_speed = 0.0;
+    }
 
 }
 

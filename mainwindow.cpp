@@ -7,10 +7,29 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    config_ini = new QSettings("E:/code space/qt/robot_remote_control/res/config.ini", QSettings::IniFormat);
+    setWindowIcon(QIcon(":/res/logo.png"));
+
+
+    about_dialog = new AboutDialog(this);
+    about_dialog->setModal(true);
+
+    mqtt_dialog = new MQTTDialog(this);
+    mqtt_dialog->setModal(true);
+
+    config_ini = new QSettings(QCoreApplication::applicationDirPath() + "/other/config.ini", QSettings::IniFormat);
     loadConfig();
+
     connect(ui->action_save, &QAction::triggered, [=](){
         saveConfig();
+    });
+
+    connect(ui->action_about, &QAction::triggered, [=](){
+
+        about_dialog->show();
+    });
+
+    connect(ui->action_mqtt, &QAction::triggered, [=](){
+        mqtt_dialog->show();
     });
 
     qRegisterMetaType<QVariant>("QVariant");//注册一种信号的参数类型
@@ -246,7 +265,7 @@ void MainWindow::on_lidarImg_btn_clicked(){
 void MainWindow::on_gps_btn_clicked()
 {
 
-    QString strMapPath="file:///E:/code space/qt/robot_remote_control/res/index.html";
+    QString strMapPath="file:///" + QCoreApplication::applicationDirPath() + "/other/index.html";
     ui->map_frame->load(strMapPath);
     ui->map_frame->show();
     ui->log_text->append("start GPS location...");
@@ -307,7 +326,7 @@ void MainWindow::showRobotInfo(QVariant s_var){
     }
 
     QString cmd = QString("doLocal(%1,%2)").arg(QString::number(r_info.gps_data.lon, 'f', 6)).arg(QString::number(r_info.gps_data.lat, 'f', 6));
-    // qDebug() << cmd;
+    qDebug() << cmd;
     ui->map_frame->page()->runJavaScript(cmd);
 
     if(m_state != r_info.robot_state){

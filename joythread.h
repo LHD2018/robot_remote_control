@@ -6,6 +6,7 @@
  */
 
 #include "joystick.h"
+#include <QtMath>
 #include <QThread>
 #include <QMetaType>
 #include <QVariant>

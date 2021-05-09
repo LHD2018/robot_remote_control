@@ -1,10 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>res/cam_back.png</file>
-        <file>res/index.html</file>
         <file>res/start.png</file>
         <file>res/stop.png</file>
-        <file>res/config.ini</file>
         <file>res/sync.png</file>
+        <file>res/logo.png</file>
     </qresource>
 </RCC>

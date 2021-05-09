@@ -832,6 +832,7 @@ p, li { white-space: pre-wrap; }
     <property name="title">
      <string>开始</string>
     </property>
+    <addaction name="action_mqtt"/>
     <addaction name="action_save"/>
     <addaction name="action_about"/>
    </widget>
@@ -856,6 +857,11 @@ p, li { white-space: pre-wrap; }
   <action name="action_save">
    <property name="text">
     <string>保存配置</string>
+   </property>
+  </action>
+  <action name="action_mqtt">
+   <property name="text">
+    <string>设置MQTT</string>
    </property>
   </action>
  </widget>

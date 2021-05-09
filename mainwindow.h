@@ -1,6 +1,8 @@
 ﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "aboutdialog.h"
+#include "mqttdialog.h"
 #include "camimgthread.h"
 #include "lidarimgthread.h"
 #include "socketworker.h"
@@ -56,6 +58,12 @@ private:
     QSettings *config_ini;           // 参数读写
 
     Ui::MainWindow *ui;
+
+    // 关于窗口
+    AboutDialog *about_dialog;
+
+    // 设置MQTT窗口
+    MQTTDialog *mqtt_dialog;
 
     // 设置按钮
     void setButton(QPushButton *button, QString pix_url, QString btn_text="");
