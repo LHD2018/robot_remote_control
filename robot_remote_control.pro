@@ -30,7 +30,8 @@ SOURCES += \
     mqttpubsub.cpp \
     mysocket.cpp \
     socketworker.cpp \
-    speeddial.cpp
+    speeddial.cpp \
+    utils.cpp
 
 HEADERS += \
     aboutdialog.h \
@@ -44,7 +45,8 @@ HEADERS += \
     mqttpubsub.h \
     mysocket.h \
     socketworker.h \
-    speeddial.h
+    speeddial.h \
+    utils.h
 
 FORMS += \
     aboutdialog.ui \

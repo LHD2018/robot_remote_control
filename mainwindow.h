@@ -1,6 +1,7 @@
 ﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "utils.h"
 #include "aboutdialog.h"
 #include "mqttdialog.h"
 #include "camimgthread.h"

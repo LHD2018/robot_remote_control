@@ -41,16 +41,16 @@ void JoyThread::joystickProcess(){
 
     memset(&joykey_info, 0, sizeof (Joykey_Info));
 
-    joykey_info.x_ax = state_row.dwXpos - 32767;
+    joykey_info.x_ax = 32767 - state_row.dwXpos;
     joykey_info.y_ax = 32511 - state_row.dwYpos;
-    joykey_info.u_ax = state_row.dwZpos - 32767;
+    joykey_info.u_ax = 32767 - state_row.dwZpos;
     joykey_info.v_ax = 32511 - state_row.dwRpos;
 
-    if(abs(joykey_info.x_ax) > 500 || abs(joykey_info.y_ax) > 500){
-        joy_c.x_speed = V_MAX_SPEED * (joykey_info.x_ax / 32767.0);
-        joy_c.y_speed = V_MAX_SPEED * (joykey_info.y_ax / 32511.0);
+    if(abs(joykey_info.x_ax) > 800 || abs(joykey_info.y_ax) > 800){
+        joy_c.x_speed = V_MAX_SPEED * (joykey_info.y_ax / 32767.0);
+        joy_c.y_speed = V_MAX_SPEED * (joykey_info.x_ax / 32511.0);
 
-        if(joy_c.y_speed > 0){
+        if(joy_c.x_speed > 0){
             joy_c.camera_tag = 1;
         } else{
             joy_c.camera_tag = -1;
@@ -58,7 +58,6 @@ void JoyThread::joystickProcess(){
     }else{
         joy_c.x_speed = 0.0;
         joy_c.y_speed = 0.0;
-        joy_c.camera_tag = 0;
     }
 
     if(abs(joykey_info.u_ax) > 500){
@@ -98,7 +97,7 @@ void JoyThread::joystickProcess(){
     if(joy_c.robot_model == 0){
         joy_c.w_speed *= W_MAX_SPEED;
     }else{
-        joy_c.y_speed = 0;
+        joy_c.w_speed *= M_PI_2;
     }
 
 }
@@ -220,6 +219,12 @@ void JoyThread::G29Process(){
         break;
     default:
         break;
+    }
+
+    if(joy_c.robot_gear >=0){
+        joy_c.camera_tag = 1;
+    }else{
+        joy_c.camera_tag = -1;
     }
 
     if(joykey_info.y_ax > 20000){

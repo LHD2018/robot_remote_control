@@ -324,10 +324,16 @@ void MainWindow::showRobotInfo(QVariant s_var){
         break;
 
     }
+    if(r_info.gps_data.lat != 0.0){
 
-    QString cmd = QString("doLocal(%1,%2)").arg(QString::number(r_info.gps_data.lon, 'f', 6)).arg(QString::number(r_info.gps_data.lat, 'f', 6));
-    qDebug() << cmd;
-    ui->map_frame->page()->runJavaScript(cmd);
+        double lat = Utils::dms2d(r_info.gps_data.lat);
+        double lon = Utils::dms2d(r_info.gps_data.lon);
+
+        QString cmd = QString("doLocal(%1,%2)").arg(QString::number(lon, 'f', 8)).arg(QString::number(lat, 'f', 8));
+        qDebug() << cmd;
+        ui->map_frame->page()->runJavaScript(cmd);
+
+    }
 
     if(m_state != r_info.robot_state){
         m_state = r_info.robot_state;
@@ -336,7 +342,7 @@ void MainWindow::showRobotInfo(QVariant s_var){
             displayLog("robot is offline, please try to turn on it or connecte to server!");
             break;
         case NO_CONTROLLER_STATE:
-            displayLog("robot is no-controller state");
+            displayLog("robot is no-localcontroller state");
             break;
         case LOCAL_CONTROL_STATE:
             displayLog("robot is local-control state");
