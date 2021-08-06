@@ -15,7 +15,7 @@
 #define JOY_READ_PEROID  100 //读取手柄周期,单位ms
 
 const float V_MAX_SPEED = 0.6;  // xy最大速度
-const float W_MAX_SPEED = 3;    // w最大速度
+const float W_MAX_SPEED = 1.93;    // w最大速度
 
 struct Joykey_Info{
     int x_ax;   // 左摇杆上下（Vx）或油门
